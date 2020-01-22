@@ -1,18 +1,17 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
-
+const PORT = 8080; 
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+
+
+app.use(cookieParser());
+app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 
-const cookieParser = require("cookie-parser");
-app.use(cookieParser());
-
-app.set("view engine", "ejs");
-
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  // b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  // i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 
 const users = {
@@ -28,6 +27,9 @@ app.listen(PORT, () => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!(users[req.cookies["user_id"]])) {
+    res.redirect("/login")
+  }
   let templateVars = {user: users[req.cookies.user_id]}
   res.render("urls_new", templateVars);
 });
@@ -46,14 +48,19 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get("/urls/error", (req, res) => {
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]["longURL"], user: users[req.cookies.user_id], error: 400, message: "400 Bad Request" };
+  res.render("urls_error", templateVars);
+});
+
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies.user_id] };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]["longURL"], user: users[req.cookies.user_id] };
   res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL]["longURL"];
   res.redirect(longURL);
 });
 
@@ -69,7 +76,7 @@ app.get("/login", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = { longURL: req.body["longURL"], userID: req.cookies.user_id }
   res.redirect(`/urls/${shortURL}`);         
 });
 
@@ -80,8 +87,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.newURL;
-  res.redirect(`/urls`);
+  urlDatabase[req.params.id]["longURL"] = req.body.newURL;
+  res.redirect('/urls');
 });
 
 app.post("/login", (req, res) => {
@@ -95,7 +102,7 @@ app.post("/login", (req, res) => {
       res.send("Incorrect password.")
     }
   } else {
-    res.send("Incorrect email.")
+    res.redirect("/urls/error")
   }
 });
 
@@ -109,17 +116,17 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const {email, password} = req.body;
   if (email.length === 0 || password.length === 0) {
-    res.statusCode = 400; res.send('Bad Request')
+    res.statusCode = 400; res.redirect("/urls/error")
   };
   if (emailHelper(email, users)) {
-    res.statusCode = 400; res.send("This email address is already registered")
+    res.statusCode = 400; res.redirect("/urls/error")
   }
   users[id] = {id, email, password}
   res.cookie("user_id", id);
   res.redirect('urls/');
 });
 
-
+//Helper Functions
 function generateRandomString() {
   return Math.random().toString(36).substr(2, 6);
 }
