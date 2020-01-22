@@ -44,12 +44,12 @@ app.get("/hello", (req, res) => {
 
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
+  let templateVars = { urls: urlsForUser(urlDatabase, req.cookies.user_id), user: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/error", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]["longURL"], user: users[req.cookies.user_id], error: 400, message: "400 Bad Request" };
+  let templateVars = {  user: users[req.cookies.user_id], error: 400, message: "400 Bad Request" };
   res.render("urls_error", templateVars);
 });
 
@@ -87,6 +87,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 
 app.post("/urls/:id", (req, res) => {
+  
   urlDatabase[req.params.id]["longURL"] = req.body.newURL;
   res.redirect('/urls');
 });
@@ -139,3 +140,16 @@ const emailHelper = (email, users) => {
   }
   return false;
 };
+const urlsForUser = ((database, userID) => {
+  const urls = {};
+  for (const key in database) {
+    const id = database[key];
+    if (userID === id["userID"]) {
+      urls[key] = {
+        longURL: id["longURL"],
+        userID
+      }
+    }
+  }
+  return urls;
+})
