@@ -4,6 +4,7 @@ const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const methodOverride = require('method-override');
 const { generateRandomString, emailHelper, urlsForUser } = require("./helpers");
 
 
@@ -13,6 +14,7 @@ app.use(cookieSession({
 }));
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(methodOverride('_method'));
 
 const urlDatabase = {
 
@@ -85,7 +87,7 @@ app.get("/*", (req, res) => {
 });
 
 ///// POST REQUESTS /////
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL", (req, res) => {
   const newObject = urlsForUser(urlDatabase, req.session.user_id);
   if (!(req.params.shortURL in newObject)) {
     let templateVars = {
@@ -101,7 +103,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id", (req, res) => {
+app.patch("/urls/:id", (req, res) => {
   const newObject = urlsForUser(urlDatabase, req.session.user_id);
   if (!(req.params.id in newObject)) {
     let templateVars = {
