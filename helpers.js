@@ -1,7 +1,8 @@
 //Helper Functions
 function generateRandomString() {
   return Math.random().toString(36).substr(2, 6);
-}
+};
+
 const emailHelper = (email, users) => {
   for (const ids in users) {
     const user = users[ids];
@@ -11,6 +12,7 @@ const emailHelper = (email, users) => {
   }
   return false;
 };
+
 const urlsForUser = (database, userID) => {
   const urls = {};
   for (const key in database) {
@@ -25,4 +27,11 @@ const urlsForUser = (database, userID) => {
   return urls;
 };
 
-module.exports = { generateRandomString, emailHelper, urlsForUser }
+const httpChecker = (url) => {
+  if (!url.includes("http")) {
+    return "http://" + url;
+  } 
+  return url;
+};
+
+module.exports = { generateRandomString, emailHelper, urlsForUser, httpChecker }

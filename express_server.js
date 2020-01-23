@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const methodOverride = require('method-override');
-const { generateRandomString, emailHelper, urlsForUser } = require("./helpers");
+const { generateRandomString, emailHelper, urlsForUser, httpChecker } = require("./helpers");
 
 
 app.use(cookieSession({
@@ -113,14 +113,13 @@ app.patch("/urls/:id", (req, res) => {
     };
     return res.render("urls_error", templateVars);
   }
-
-  urlDatabase[req.params.id]["longURL"] = req.body.newURL;
+  urlDatabase[req.params.id]["longURL"] = httpChecker(req.body.newURL);
   res.redirect("/urls");
 });
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = { longURL: req.body["longURL"], userID: req.session.user_id };
+  urlDatabase[shortURL] = { longURL: httpChecker(req.body["longURL"]), userID: req.session.user_id };
   res.redirect(`/urls/${shortURL}`);
 });
 
