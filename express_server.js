@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080; 
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcrypt');
 
 
 app.use(cookieParser());
@@ -108,11 +109,11 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body
   let user = emailHelper(email, users);
   if (user) {
-    if (password === user.password) {
+    if (bcrypt.compareSync(password, user.hashedPassword)) {
       res.cookie("user_id", user.id);
       return res.redirect('/urls');
     } else {
-      res.send("Incorrect password.")
+      res.redirect("/urls/error")
     }
   } else {
     res.redirect("/urls/error")
@@ -128,13 +129,14 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const {email, password} = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (email.length === 0 || password.length === 0) {
     res.statusCode = 400; res.redirect("/urls/error")
   };
   if (emailHelper(email, users)) {
     res.statusCode = 400; res.redirect("/urls/error")
   }
-  users[id] = {id, email, password}
+  users[id] = {id, email, hashedPassword}
   res.cookie("user_id", id);
   res.redirect('urls/');
 });
