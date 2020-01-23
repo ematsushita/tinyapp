@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; 
+const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
@@ -25,18 +25,20 @@ const users = {
 ///// GET REQUESTS /////
 app.get("/urls/new", (req, res) => {
   if (!(users[req.session.user_id])) {
-    res.redirect("/login");
-  };
+    return res.redirect("/login");
+  }
   let templateVars = {user: users[req.session.user_id]};
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  if(!(req.params.shortURL in urlDatabase)) {res.redirect('/urls')};
+  if (!(req.params.shortURL in urlDatabase)) {
+    return res.redirect('/urls');
+  }
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]["longURL"],
-    user: users[req.session.user_id] 
+    user: users[req.session.user_id]
   };
   res.render("urls_show", templateVars);
 });
@@ -64,7 +66,7 @@ app.get("/register", (req, res) => {
 app.get("/login", (req, res) => {
   let templateVars = {user: users[req.session.user_id]};
   res.render("urls_login", templateVars);
-})
+});
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -80,12 +82,20 @@ app.get("/", (req, res) => {
 
 app.get("/*", (req, res) => {
   res.redirect("/urls");
-})
+});
 
 ///// POST REQUESTS /////
 app.post("/urls/:shortURL/delete", (req, res) => {
   const newObject = urlsForUser(urlDatabase, req.session.user_id);
-  if(!(req.params.shortURL in newObject)) {return res.redirect("/urls/error")};
+  if (!(req.params.shortURL in newObject)) {
+    let templateVars = {
+      message: "You need to be logged in to delete or edit your URLs",
+      error: 401,
+      user: undefined
+    };
+    
+    return res.render("urls_error", templateVars);
+  }
 
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
@@ -93,7 +103,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 app.post("/urls/:id", (req, res) => {
   const newObject = urlsForUser(urlDatabase, req.session.user_id);
-  if(!(req.params.id in newObject)) {return res.redirect("/urls/error")};
+  if (!(req.params.id in newObject)) {
+    let templateVars = {
+      message: "You need to be logged in to delete or edit your URLs",
+      error: 401,
+      user: undefined
+    };
+    return res.render("urls_error", templateVars);
+  }
 
   urlDatabase[req.params.id]["longURL"] = req.body.newURL;
   res.redirect("/urls");
@@ -102,22 +119,33 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body["longURL"], userID: req.session.user_id };
-  res.redirect(`/urls/${shortURL}`);         
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   let user = emailHelper(email, users);
+  //check to see if email is valid. if valid, check to see if passwords match
   if (user) {
     if (bcrypt.compareSync(password, user.hashedPassword)) {
       req.session.user_id = user.id;
       return res.redirect("/urls");
     } else {
-      res.redirect("/urls/error");
+      let templateVars = {
+        message: "Incorrect email and/or password",
+        error: 400,
+        user: undefined
+      };
+      return res.render("urls_error", templateVars);
     }
   } else {
-    res.redirect("/urls/error");
-  };
+    let templateVars = {
+      message: "Incorrect email and/or password",
+      error: 400,
+      user: undefined
+    };
+    res.render("urls_error", templateVars);
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -129,11 +157,15 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const {email, password} = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  if (email.length === 0 || password.length === 0) {
-    res.statusCode = 400; res.redirect("/urls/error");
-  };
+
+  //check to see if the email address is already registered
   if (emailHelper(email, users)) {
-    res.statusCode = 400; res.redirect("/urls/error");
+    let templateVars = {
+      user: undefined,
+      error: 400,
+      message: "This email address is already registered with an account."
+    }
+    return res.render("urls_error", templateVars);
   }
   users[id] = {id, email, hashedPassword};
   req.session.user_id = id;
