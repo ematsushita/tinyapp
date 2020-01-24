@@ -1,5 +1,5 @@
 //Helper Functions
-function generateRandomString() {
+const  generateRandomString = () => {
   return Math.random().toString(36).substr(2, 6);
 };
 
@@ -30,8 +30,8 @@ const urlsForUser = (database, userID) => {
 const httpChecker = (url) => {
   if (!url.includes("http")) {
     return "http://" + url;
-  } 
+  }
   return url;
 };
 
-module.exports = { generateRandomString, emailHelper, urlsForUser, httpChecker }
+module.exports = { generateRandomString, emailHelper, urlsForUser, httpChecker };

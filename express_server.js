@@ -165,7 +165,7 @@ app.post("/register", (req, res) => {
       user: undefined,
       error: 400,
       message: "This email address is already registered with an account."
-    }
+    };
     return res.render("urls_error", templateVars);
   }
   users[id] = {id, email, hashedPassword};
